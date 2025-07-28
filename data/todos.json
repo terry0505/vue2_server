@@ -1,22 +1,4 @@
-[
-  {
-    "id": 1753683363329,
-    "title": "ㅇㅇㅇㅇㅇㅇ",
-    "completed": false
-  },
-  {
-    "id": 1753683361162,
-    "title": "ㅇㅇㅇㅇ",
-    "completed": false
-  },
-  {
-    "id": 1753679891723,
-    "title": "ㅁㄴㅇㄻㅇㄻㄴㅇㄹㄴㅇㄹ",
-    "completed": false
-  },
-  {
-    "id": 1753679779367,
-    "title": "ㅁㄴㅇㄻㅇㄻㄴㅇㄹㄴㅇㄹ",
-    "completed": false
-  }
-]
+{
+  "abc123": [{ "id": 1, "title": "사용자 A의 할 일" }],
+  "def456": [{ "id": 2, "title": "사용자 B의 할 일" }]
+}
