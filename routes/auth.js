@@ -14,7 +14,7 @@ function getUsers() {
   return JSON.parse(data);
 }
 
-// 회원가입
+// 🔐 회원가입
 router.post("/register", (req, res) => {
   const { username, password } = req.body;
   const users = getUsers();
@@ -29,7 +29,7 @@ router.post("/register", (req, res) => {
   res.status(201).json({ message: "회원가입 완료" });
 });
 
-// 로그인 + JWT 발급
+// 🔐 로그인 + JWT 발급
 router.post("/login", (req, res) => {
   const { username, password } = req.body;
   const users = getUsers();
