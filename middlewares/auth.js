@@ -6,7 +6,7 @@ module.exports = function (req, res, next) {
   if (!authHeader)
     return res.status(401).json({ message: "인증 토큰이 없습니다." });
 
-  const token = authHeader.split("")[1];
+  const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, SECRET); // {username}
     req.user = decoded;
