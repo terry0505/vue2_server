@@ -1,50 +1,93 @@
 const express = require("express");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
-const jwt = require("jsonwebtoken");
+const auth = require("../middlewares/auth");
 
 const router = express.Router();
-const USERS_FILE = path.join(__dirname, "../data/users.json");
-const SECRET = "my-vue-jwt-secret"; // JWT 서명용 비밀 키
+const DATA_FILE = path.join(__dirname, "../data/todos.json");
 
-// 유저 목록 불러오기
-function getUsers() {
-  if (!fs.existsSync(USERS_FILE)) return [];
-  const data = fs.readFileSync(USERS_FILE, "utf-8");
-  return JSON.parse(data);
-}
+let todosByUser = {};
 
-// 회원가입
-router.post("/register", (req, res) => {
-  const { username, password } = req.body;
-  const users = getUsers();
-
-  const exists = users.find((u) => u.username === username);
-  if (exists) {
-    return res.status(400).json({ message: "이미 존재하는 아이디입니다." });
+const loadTodos = async () => {
+  try {
+    const data = await fs.readFile(DATA_FILE, "utf-8");
+    todosByUser = JSON.parse(data);
+  } catch {
+    todosByUser = {};
   }
+};
 
-  users.push({ username, password });
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-  res.status(201).json({ message: "회원가입 완료" });
+const saveTodos = async () => {
+  await fs.writeFile(DATA_FILE, JSON.stringify(todosByUser, null, 2));
+};
+
+loadTodos();
+
+// ✅ 인증 미들웨어 전역 적용
+router.use(auth);
+
+// ✅ GET /todos
+router.get("/", (req, res) => {
+  const username = req.user.username;
+  res.json(todosByUser[username] || []);
 });
 
-// 로그인 + JWT 발급
-router.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  const users = getUsers();
+// ✅ POST /todos
+router.post("/", async (req, res) => {
+  const { title, completed = false } = req.body;
+  const username = req.user.username;
 
-  const found = users.find(
-    (u) => u.username === username && u.password === password
-  );
-  if (!found) {
-    return res
-      .status(401)
-      .json({ message: "아이디 또는 비밀번호가 올바르지 않습니다." });
+  if (!title) return res.status(400).json({ message: "할 일을 입력하세요." });
+
+  const newTodo = {
+    id: Date.now(),
+    title,
+    completed
+  };
+
+  if (!todosByUser[username]) {
+    todosByUser[username] = [];
   }
 
-  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
-  res.json({ token, username });
+  todosByUser[username].unshift(newTodo);
+  await saveTodos();
+  res.status(201).json(newTodo);
+});
+
+// ✅ PUT /todos/:id
+router.put("/:id", async (req, res) => {
+  const username = req.user.username;
+  const id = Number(req.params.id);
+  const { title, completed } = req.body;
+
+  if (!todosByUser[username]) return res.sendStatus(404);
+
+  todosByUser[username] = todosByUser[username].map((todo) =>
+    todo.id === id
+      ? {
+          ...todo,
+          ...(title !== undefined && { title }),
+          ...(completed !== undefined && { completed })
+        }
+      : todo
+  );
+
+  await saveTodos();
+  res.sendStatus(200);
+});
+
+// ✅ DELETE /todos/:id
+router.delete("/:id", async (req, res) => {
+  const username = req.user.username;
+  const id = Number(req.params.id);
+
+  if (!todosByUser[username]) return res.sendStatus(404);
+
+  todosByUser[username] = todosByUser[username].filter(
+    (todo) => todo.id !== id
+  );
+  await saveTodos();
+  res.sendStatus(200);
 });
 
 module.exports = router;
