@@ -67,17 +67,22 @@ router.delete("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const userId = req.body.userId;
   const id = Number(req.params.id);
-  const { title } = req.body;
+  const { title, completed } = req.body;
 
-  if (!userId || !title || !todosByUser[userId]) {
-    return res.status(400).json({ message: "유효하지 않은 요청입니다" });
+  if (!userId || !todosByUser[userId]) {
+    return res.status(400).json({ message: "잘못된 요청" });
   }
 
-  todosByUser[userId] = todosByUser[userId].map((todo) =>
-    todo.id === id ? { ...todo, title } : todo
-  );
+  todosByUser[userId] = todosByUser[userId].map((todo) => {
+    if (todo.id !== id) return todo;
+    return {
+      ...todo,
+      ...(title !== undefined && { title }),
+      ...(completed !== undefined && { completed })
+    };
+  });
 
-  await saveTodos();
+  await saveTodos(); // ✅ 변경 후 파일 저장
   res.sendStatus(200);
 });
 
